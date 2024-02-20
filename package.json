@@ -2,8 +2,10 @@
   "name": "chai-backend",
   "version": "1.0.0",
   "description": "a backend project guided by hitesh sir",
+  "type": "module",
   "main": "index.js",
   "scripts": {
+    "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -11,5 +13,9 @@
     "backend"
   ],
   "author": "Manoj",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.0.3",
+    "prettier": "^3.2.5"
+  }
 }
