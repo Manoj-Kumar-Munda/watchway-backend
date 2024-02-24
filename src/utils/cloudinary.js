@@ -1,4 +1,3 @@
-
 import fs from "fs";
 
 import { v2 as cloudinary } from "cloudinary";
@@ -17,14 +16,30 @@ const uploadOnCloudinary = async (localFilePath) => {
       resource_type: "auto",
     });
     //file has been uploaded successfully
-    console.log("file is uploaded on cloudinary reponse: ", response);
+    console.log("file is uploaded on cloudinary reponse: ");
     fs.unlinkSync(localFilePath);
     return response;
   } catch (error) {
-    fs.unlinkSync( localFilePath)
-      //remove the locally saved temp file as the up[load operation got failed
-     return null;
+    fs.unlinkSync(localFilePath);
+    //remove the locally saved temp file as the up[load operation got failed
+    return null;
   }
 };
 
-export { uploadOnCloudinary };
+const deleteAssetOnCloudinary = async (publicId) => {
+  try {
+    if (!publicId) {
+      return null;
+    }
+
+    //delete file from cloudinary
+    const response = await cloudinary.v2.uploader.destroy(publicId);
+
+    //file has been deleted successfully
+    console.log("file is deleted on cloudinary reponse: ", response);
+  } catch (error) {
+    return null;
+  }
+};
+
+export { uploadOnCloudinary, deleteAssetOnCloudinary };
