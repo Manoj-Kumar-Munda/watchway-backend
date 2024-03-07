@@ -18,7 +18,7 @@ const userSchema = new Schema(
       unique: true,
       lowercase: true,
       trim: true,
-    },
+    }, 
     fullName: {
       type: String,
       required: true,
@@ -60,7 +60,7 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods.isPasswordCorrect = async function (password) {
-  return await bcrypt.compare(password, this.password);
+  return await bcrypt.compare(password, this.password); //here this.password is the hashed password stored in db and password is the plainText that is sent by the client
 };
 
 userSchema.methods.generateAccessToken = function () {
