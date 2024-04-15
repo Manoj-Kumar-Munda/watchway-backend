@@ -18,6 +18,8 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 router.route("/register").post(
+
+  // multer middleware to handle multiple files with different names
   upload.fields([
     {
       name: "avatar",

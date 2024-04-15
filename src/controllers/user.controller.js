@@ -89,7 +89,7 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
   if (!username && !email) {
-    throw new ApiError(400, "username or password is required");
+    throw new ApiError(400, "username or email is required");
   }
 
   const user = await User.findOne({
@@ -403,7 +403,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         from: "videos",
         localField: "watchHistory",
         foreignField: "_id",
-        as: "wathcHistory",
+        as: "watchHistory",
         pipeline: [
           {
             $lookup: {
