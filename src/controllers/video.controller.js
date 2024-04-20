@@ -68,7 +68,17 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  //TODO: get video by id
+  if(!videoId){
+    throw new ApiError(400, "VideoId is required");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if(!video){
+    throw new ApiError(500, "Internal server error");
+  }
+
+  return res.status(200).json(new ApiResponse(200, video))
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
