@@ -26,20 +26,30 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-const deleteAssetOnCloudinary = async (publicId) => {
+const deleteAssetOnCloudinary = async (publicId, type='image') => {
+  console.log("inside cloudinary", publicId);
   try {
     if (!publicId) {
       return null;
     }
 
+    
     //delete file from cloudinary
-    const response = await cloudinary.v2.uploader.destroy(publicId);
+    const response = await cloudinary.api.delete_resources([publicId], {
+      type: "upload",
+      resource_type: type,
+    });
 
     //file has been deleted successfully
     console.log("file is deleted on cloudinary reponse: ", response);
   } catch (error) {
+    console.log(error);
     return null;
   }
 };
 
-export { uploadOnCloudinary, deleteAssetOnCloudinary };
+const getCloudinrayPublicId = (url) => {
+  return url.split("/").at(-1).split(".")[0];
+};
+
+export { uploadOnCloudinary, deleteAssetOnCloudinary, getCloudinrayPublicId };
