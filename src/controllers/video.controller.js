@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteAssetOnCloudinary, getCloudinrayPublicId, uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   // const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
@@ -89,6 +89,25 @@ const updateVideo = asyncHandler(async (req, res) => {
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: delete video
+  if(!videoId){
+    throw new ApiError(400, "VideoId not found");
+  }
+
+  const video = await Video.findOne({ _id: new mongoose.Types.ObjectId(videoId)},{ videoFile: 1} );
+  if(!video){
+    throw new ApiError(500, "Video is unavailable");
+  }
+  const videoPublicId = getCloudinrayPublicId(video.videoFile);
+  await deleteAssetOnCloudinary(videoPublicId, 'video');
+  const result = await Video.deleteOne({_id: new mongoose.Types.ObjectId(videoId)});
+
+ if(result.deletedCount !== 1){
+  throw new ApiError(500, "Failed to delete video");
+ }
+ 
+
+  return res.status(200).json( new ApiResponse(200,{}, "Video successfully deleted"));
+
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
