@@ -44,7 +44,7 @@ const deleteAssetOnCloudinary = async (publicId, type='image') => {
     console.log("file is deleted on cloudinary reponse: ", response);
   } catch (error) {
     console.log(error);
-    return null;
+    return  null;
   }
 };
 
