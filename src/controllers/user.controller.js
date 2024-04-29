@@ -261,6 +261,8 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Account details updated successfully"));
 });
 
+
+//TODO: Need to check
 const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
 
@@ -274,8 +276,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "error while uploading on avatar");
   }
 
-  if (user.avatar) {
-    let oldAvatarPublicId = getCloudinrayPublicId(user.avatar);
+  if (req.user.avatar) {
+    let oldAvatarPublicId = getCloudinrayPublicId(req.user.avatar);
     await deleteAssetOnCloudinary(oldAvatarPublicId);
   }
 
