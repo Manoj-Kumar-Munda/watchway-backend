@@ -1,6 +1,5 @@
 import mongoose, { isValidObjectId } from "mongoose";
-import { Video } from "../models/video.model.js";
-import { User } from "../models/user.model.js";
+import { sortingOptons, Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -10,13 +9,71 @@ import {
   uploadOnCloudinary,
 } from "../utils/cloudinary.js";
 
+const getSortingOptions = asyncHandler(async (req, res) => {
+  return res.status(200).json(new ApiResponse(200, sortingOptons, ""));
+});
+
 const getAllVideos = asyncHandler(async (req, res) => {
-  // const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-  //TODO: get all videos based on query, sort, pagination
-  const page = parseInt(req.query.page) - 1 || 0;
-  const limit = parseInt(req.query.limit) || 10;
-  const query = req.query.limit || null;
-  const sortBy = req.query.sortBy || "createdAt";
+  const { query, sortBy = "createdAt", sortType = 1 } = req.query;
+
+  const page = +req.query.page;
+  const limit = +req.query.limit;
+
+  if (page < 1) {
+    throw new ApiError(400, "Invalid page number");
+  }
+});
+
+const getSearchResults = asyncHandler(async (req, res) => {
+  // const {
+  //   page = 1,
+  //   limit = 10,
+  //   query='',
+  //   sortBy = "createdAt",
+  //   sortType = 1,
+  // } = req.query;
+  const { query = "" } = req.query;
+  console.log(query);
+
+  const searchResults = await Video.aggregate([
+    {
+      $match: {
+        $text: {
+          $search: query,
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              email: 1,
+              avatar: 1,
+            },
+          },
+        ],
+        as: "owner",
+      },
+    },
+    {
+      $addFields: {
+        owner: {
+          $first: "$owner",
+        },
+      },
+    },
+  ]);
+
+  if (searchResults.length === 0) {
+    throw new ApiError(404, "No video found");
+  }
+
+  return res.status(200).json(new ApiResponse(200, searchResults));
 });
 
 const publishAVideo = asyncHandler(async (req, res) => {
@@ -84,22 +141,94 @@ const getVideoById = asyncHandler(async (req, res) => {
 
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  //TODO: update video details like title, description, thumbnail
+
+  const { title, description } = req.body;
+
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(400, "Video not found");
+  }
+
+  if (!req.user._id.equals(video.owner)) {
+    throw new ApiError(403, "You are not authorized to delete this video");
+  }
+
+  const updatedVideo = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      title,
+      description,
+    },
+    {
+      new: true,
+    }
+  );
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, "Title and description updated"));
+});
+
+const changeThumbnail = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    throw new ApiError(400, "VideoId is required");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(400, "Video not found");
+  }
+
+  if (!req.user._id.equals(video.owner)) {
+    throw new ApiError(403, "Not authorized");
+  }
+
+  const newThumbnailLocalPath = req.file?.path;
+  if (!newThumbnailLocalPath) {
+    throw new ApiError(400, "Thumbnail is required");
+  }
+
+  const thumbnail = await uploadOnCloudinary(newThumbnailLocalPath);
+
+  if (!thumbnail.url) {
+    throw new ApiError(400, "error while uploading on avatar");
+  }
+
+  const oldThumbnailPublicId = getCloudinrayPublicId(video.thumbnail);
+  await deleteAssetOnCloudinary(oldThumbnailPublicId);
+
+  const updatedVideo = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      $set: {
+        thumbnail: thumbnail.url,
+      },
+    },
+    { new: true }
+  );
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, "thumbnail updated successfully"));
 });
 
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  //TODO: delete video
+
   if (!videoId) {
-    throw new ApiError(400, "VideoId not found");
+    throw new ApiError(400, "VideoId is required");
   }
 
   const video = await Video.findOne(
     { _id: videoId },
-    { videoFile: 1, thumbnail: 1 }
+    { videoFile: 1, thumbnail: 1, owner: 1 }
   );
-  if (!video) {
-    throw new ApiError(500, "Video is unavailable");
+
+  if (!req.user._id.equals(video.owner)) {
+    throw new ApiError(403, "You are not authorized to delete this video");
   }
 
   const videoPublicId = getCloudinrayPublicId(video.videoFile);
@@ -125,15 +254,15 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
   const video = await Video.findById(videoId);
 
+  if (!req.user._id.equals(video.owner)) {
+    throw new ApiError(403, "You are not authorized to delete this video");
+  }
+
   video.isPublished = !video.isPublished;
 
   await video.save({ validateBeforeSave: false });
 
   const updatedVideo = await Video.findById(videoId);
-
-  if (!video) {
-    throw new ApiError(500, "Video not available");
-  }
 
   return res
     .status(200)
@@ -141,10 +270,12 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 });
 
 export {
-  getAllVideos,
+  getSortingOptions,
+  getSearchResults,
   publishAVideo,
   getVideoById,
   updateVideo,
+  changeThumbnail,
   deleteVideo,
   togglePublishStatus,
 };

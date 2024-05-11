@@ -262,7 +262,6 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 
-//TODO: Need to check
 const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
 
