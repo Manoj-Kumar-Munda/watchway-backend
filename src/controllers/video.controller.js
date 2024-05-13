@@ -1,4 +1,4 @@
-import mongoose, { isValidObjectId } from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 import { sortingOptons, Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -13,29 +13,33 @@ const getSortingOptions = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, sortingOptons, ""));
 });
 
-const getAllVideos = asyncHandler(async (req, res) => {
-  const { query, sortBy = "createdAt", sortType = 1 } = req.query;
+const getMyVideos = asyncHandler(async (req, res) => {
+  const { sortBy = "createdAt", sortType = 1 } = req.query;
 
-  const page = +req.query.page;
-  const limit = +req.query.limit;
+  const page = +req.query.page || 1;
+  const limit = +req.query.limit || 10;
 
-  if (page < 1) {
-    throw new ApiError(400, "Invalid page number");
-  }
+  const aggregate = await Video.aggregate([
+    {
+      $match: {
+        owner: req.user._id
+      }
+    }
+  ]);
+
+  console.log("Aggregate: ", aggregate);
+
 });
 
 const getSearchResults = asyncHandler(async (req, res) => {
-  // const {
-  //   page = 1,
-  //   limit = 10,
-  //   query='',
-  //   sortBy = "createdAt",
-  //   sortType = 1,
-  // } = req.query;
-  const { query = "" } = req.query;
-  console.log(query);
+  
+  const page = +req.query.page || 1;
+  const limit = +req.query.limit || 10;
+  const query = req.query.query || "";
+  const sortBy = req.query.sortBy || "createdAt";
+  const sortOrder = +req.query.sortOrder || 1;
 
-  const searchResults = await Video.aggregate([
+  const aggregate = Video.aggregate([
     {
       $match: {
         $text: {
@@ -67,9 +71,19 @@ const getSearchResults = asyncHandler(async (req, res) => {
         },
       },
     },
+    {
+      $sort: {
+        [sortBy]: sortOrder,
+      },
+    },
   ]);
 
-  if (searchResults.length === 0) {
+  const searchResults = await Video.aggregatePaginate(aggregate, {
+    page,
+    limit,
+  });
+
+  if (searchResults.docs.length === 0) {
     throw new ApiError(404, "No video found");
   }
 
