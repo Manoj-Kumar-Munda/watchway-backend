@@ -1,4 +1,4 @@
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 import { sortingOptons, Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -13,31 +13,79 @@ const getSortingOptions = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, sortingOptons, ""));
 });
 
-const getMyVideos = asyncHandler(async (req, res) => {
-  const { sortBy = "createdAt", sortType = 1 } = req.query;
+const getAllVideos = asyncHandler(async (req, res) => {
+  const { userId } = req.query;
 
-  const page = +req.query.page || 1;
-  const limit = +req.query.limit || 10;
+  if (!userId) {
+    throw new ApiError(400, "UserId is required");
+  }
 
-  const aggregate = await Video.aggregate([
+  page = (parseInt(page) && (page < 1 ? 1 : page)) || 1;
+  limit = (parseInt(limit) && (limit < 1 ? 10 : limit)) || 10;
+
+  sortBy = req.query.sortBy || "createdAt";
+  sortOrder = (parseInt(sortOrder) && (sortOrder >= 1 ? 1 : -1)) || 1;
+
+  const aggregate = Video.aggregate([
     {
       $match: {
-        owner: req.user._id
-      }
-    }
+        $and: [
+          { owner: new mongoose.Types.ObjectId(userId) },
+          { isPublished: true },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              avatar: 1,
+            },
+          },
+        ],
+        as: "owner",
+      },
+    },
+    {
+      $unwind: {
+        path: "$owner",
+      },
+    },
+    {
+      $sort: {
+        [sortBy]: sortOrder,
+      },
+    },
   ]);
 
-  console.log("Aggregate: ", aggregate);
+  const videos = await Video.aggregatePaginate(aggregate, {
+    page: page,
+    limit: limit,
+  });
 
+  if (videos.docs.length === 0) {
+    throw new ApiError(400, "No videos available");
+  }
+
+  return res.status(200).json(new ApiResponse(200, videos, ""));
 });
 
 const getSearchResults = asyncHandler(async (req, res) => {
-  
-  const page = +req.query.page || 1;
-  const limit = +req.query.limit || 10;
+  const page =
+    (parseInt(req.query.page) && (req.query.page < 1 ? 1 : req.query.page)) ||
+    1;
+  const limit =
+    (parseInt(req.query.limit) &&
+      (req.query.limit < 1 ? 10 : req.query.limit)) ||
+    10;
   const query = req.query.query || "";
   const sortBy = req.query.sortBy || "createdAt";
-  const sortOrder = +req.query.sortOrder || 1;
+  const sortOrder = (parseInt(sortOrder) && (sortOrder >= 1 ? 1 : -1)) || 1;
 
   const aggregate = Video.aggregate([
     {
@@ -45,6 +93,11 @@ const getSearchResults = asyncHandler(async (req, res) => {
         $text: {
           $search: query,
         },
+      },
+    },
+    {
+      $match: {
+        isPublished: true,
       },
     },
     {
@@ -65,10 +118,8 @@ const getSearchResults = asyncHandler(async (req, res) => {
       },
     },
     {
-      $addFields: {
-        owner: {
-          $first: "$owner",
-        },
+      $unwind: {
+        path: "$owner",
       },
     },
     {
@@ -285,6 +336,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
 export {
   getSortingOptions,
+  getAllVideos,
   getSearchResults,
   publishAVideo,
   getVideoById,

@@ -3,6 +3,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 import {
   changeThumbnail,
   deleteVideo,
+  getAllVideos,
   getSearchResults,
   getVideoById,
   publishAVideo,
@@ -13,7 +14,11 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const videoRouter = express.Router();
 
-videoRouter.route("/").post(
+videoRouter.route("/")
+  .get(
+    getAllVideos
+  )
+  .post(
   verifyJWT,
   upload.fields([
     {
@@ -27,9 +32,7 @@ videoRouter.route("/").post(
   ]),
   publishAVideo
 );
-videoRouter
-  .route("/status/:videoId")
-  .patch(verifyJWT, togglePublishStatus);
+videoRouter.route("/status/:videoId").patch(verifyJWT, togglePublishStatus);
 
 videoRouter.route("/update/:videoId").patch(verifyJWT, updateVideo);
 
