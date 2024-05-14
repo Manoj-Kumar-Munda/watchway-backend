@@ -92,12 +92,45 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Error while adding the video to the playlist");
   }
 
-  return res.status(200).json(new ApiResponse(200, updatedPlaylist, "Video added to the playlist"))
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedPlaylist, "Video added to the playlist"));
 });
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   const { playlistId, videoId } = req.params;
-  // TODO: remove video from playlist
+  if (!playlistId) {
+    throw new ApiError("PlaylistId is required");
+  }
+
+  if (!videoId) {
+    throw new ApiError("VideoId is required");
+  }
+
+  const video = await Video.findById(videoId);
+  const playlist = await Playlist.findById(playlistId);
+
+  if (
+    !(playlist.owner.equals(req.user?._id) && video.owner.equals(req.user._id))
+  ) {
+    throw new ApiError(400, "Only owner can make changes to othe playlist");
+  }
+
+  const updatedPlaylist = await Playlist.findByIdAndUpdate(
+    playlistId,
+    {
+      $pull: {
+        videos: videoId,
+      },
+    },
+    { new: true }
+  );
+
+  if (!updatedPlaylist) {
+    throw new ApiError(500, "Error while removing the video from the playlist");
+  }
+
+  return res.status(200).json( new ApiResponse(200, updatedPlaylist, "Video removed from the playlist successfully"));
 });
 
 const deletePlaylist = asyncHandler(async (req, res) => {
