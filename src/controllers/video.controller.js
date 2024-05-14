@@ -215,7 +215,7 @@ const updateVideo = asyncHandler(async (req, res) => {
   }
 
   if (!req.user._id.equals(video.owner)) {
-    throw new ApiError(403, "You are not authorized to delete this video");
+    throw new ApiError(403, "You are not authorized to make changes");
   }
 
   const updatedVideo = await Video.findByIdAndUpdate(
@@ -320,7 +320,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   const video = await Video.findById(videoId);
 
   if (!req.user._id.equals(video.owner)) {
-    throw new ApiError(403, "You are not authorized to delete this video");
+    throw new ApiError(403, "You are not authorized to make changes");
   }
 
   video.isPublished = !video.isPublished;
