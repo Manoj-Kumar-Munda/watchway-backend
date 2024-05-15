@@ -85,15 +85,67 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     },
   ]);
 
-  if(!subscibers){
+  if (!subscibers) {
     throw new ApiError(500, "Error while fetching subsribers list");
   }
-  return res.status(200).json( new ApiResponse(200, subscibers));
+  return res.status(200).json(new ApiResponse(200, subscibers));
 });
 
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
   const { subscriberId } = req.params;
+
+  if(!isValidObjectId(subscriberId)){
+    throw new ApiError(400, "Invalid subscriberId");
+  }
+
+  const subscribedChannels = await Subscription.aggregate([
+    {
+      $match: {
+        subscriber: new mongoose.Types.ObjectId(subscriberId),
+      },
+    },
+    {
+      $group: {
+        _id: "$subscriber",
+        channelSubscribed: {
+          $push: "$channel",
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "channelSubscribed",
+        foreignField: "_id",
+        as: "channelSubscribed",
+      },
+    },
+    {
+      $addFields: {
+        subscribedChannelCount: {
+          $size: "$channelSubscribed",
+        },
+      },
+    },
+    {
+      $project: {
+        channelSubscribed: {
+          fullName: 1,
+          username: 1,
+          avatar: 1,
+          email: 1
+        },
+        subscribedChannelCount: 1,
+      },
+    },
+  ]);
+
+  if(!subscribedChannels){
+    throw new ApiError(500, "error while fetching subscibed channel list");
+  }
+
+  return res.status(200).json(new ApiResponse(200, subscribedChannels));
 });
 
 export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };
