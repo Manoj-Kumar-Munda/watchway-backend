@@ -20,11 +20,14 @@ app.use(cookieParser());
 import userRouter from "./routes/user.routes.js";
 import videoRouter from "./routes/video.router.js";
 import playlistRouter from "./routes/playlist.routes.js";
-
+import subscriptionRouter from "./routes/subscription.routes.js";
 //routes declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/videos", videoRouter);
 app.use("/api/v1/playlist", playlistRouter);
+app.use("/api/v1/subscription", subscriptionRouter);
+
+
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
