@@ -26,9 +26,7 @@ const createTweet = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, tweet, "Tweet created successfully"));
 });
 
-const getUserTweets = asyncHandler(async (req, res) => {
-  // TODO: get user tweets
-});
+const getUserTweets = asyncHandler(async (req, res) => {});
 
 const updateTweet = asyncHandler(async (req, res) => {
   const tweetId = req.params;
@@ -36,6 +34,12 @@ const updateTweet = asyncHandler(async (req, res) => {
 
   if (!isValidObjectId(tweetId)) {
     throw new ApiError(400, "Invalid tweetId");
+  }
+
+  const tweet = await Tweet.findById(tweetId);
+
+  if (!tweet) {
+    throw new ApiError(404, "Tweet not found");
   }
 
   const updatedTweet = await Tweet.findByIdAndUpdate(
@@ -62,6 +66,12 @@ const deleteTweet = asyncHandler(async (req, res) => {
 
   if (!isValidObjectId(tweetId)) {
     throw new ApiError(400, "Invalid TweetId");
+  }
+
+  const tweet = await Tweet.findById(tweetId);
+
+  if (!tweet) {
+    throw new ApiError(404, "Tweet not found");
   }
 
   const deletedTweet = await Tweet.findByIdAndDelete(tweetId);
