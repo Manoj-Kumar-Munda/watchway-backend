@@ -26,7 +26,86 @@ const createTweet = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, tweet, "Tweet created successfully"));
 });
 
-const getUserTweets = asyncHandler(async (req, res) => {});
+const getUserTweets = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid userId");
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const userTweets = await Tweet.aggregate([
+    {
+      $match: {
+        owner: new mongoose.Types.ObjectId(userId),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              fullName: 1,
+              username: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $unwind: {
+        path: "$owner",
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "tweet",
+        as: "likesInfo",
+      },
+    },
+    {
+      $addFields: {
+        likeCount: {
+          $size: "$likesInfo",
+        },
+        isLiked: {
+          $cond: {
+            if: {
+              $in: ["$owner._id", "$likesInfo.likedBy"],
+            },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        content: 1,
+        owner: 1,
+        likeCount: 1,
+        isLiked: 1,
+        createdAt: 1,
+      },
+    },
+  ]);
+
+  if (userTweets.length === 0) {
+    throw new ApiError(404, "Haven't tweeted yet");
+  }
+
+  return res.status(200).json(new ApiResponse(200, userTweets));
+});
 
 const updateTweet = asyncHandler(async (req, res) => {
   const tweetId = req.params;
