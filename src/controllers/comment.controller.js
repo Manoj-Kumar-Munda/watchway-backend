@@ -3,6 +3,7 @@ import { Comment } from "../models/comment.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Video } from "../models/video.model.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
@@ -91,6 +92,11 @@ const addComment = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Comment is required");
   }
 
+  const video = await Video.findById(videoId);
+  if(!video){
+    throw new ApiError(404, "Video not found");
+  }
+
   const comment = await Comment.create({
     video: videoId,
     content,
@@ -114,6 +120,12 @@ const updateComment = asyncHandler(async (req, res) => {
 
   if (!isValidObjectId(commentId)) {
     throw new ApiError(400, "commentId is not valid");
+  }
+
+  const comment = await Comment.findById(commentId);
+
+  if(!comment){
+    throw new ApiError(404, "Comment not found");
   }
 
   const updatedComment = await Comment.findByIdAndUpdate(
