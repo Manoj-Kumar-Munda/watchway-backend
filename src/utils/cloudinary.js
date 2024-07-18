@@ -16,24 +16,24 @@ const uploadOnCloudinary = async (localFilePath) => {
       resource_type: "auto",
       // folder: "videotube"
     });
-    
     fs.unlinkSync(localFilePath);
     return response;
   } catch (error) {
     fs.unlinkSync(localFilePath);
+
+    console.log("error: ", error);
     //remove the locally saved temp file as the up[load operation got failed
     return null;
   }
 };
 
-const deleteAssetOnCloudinary = async (publicId, type='image') => {
+const deleteAssetOnCloudinary = async (publicId, type = "image") => {
   console.log("inside cloudinary", publicId);
   try {
     if (!publicId) {
       return null;
     }
 
-    
     //delete file from cloudinary
     const response = await cloudinary.api.delete_resources([publicId], {
       type: "upload",
@@ -44,7 +44,7 @@ const deleteAssetOnCloudinary = async (publicId, type='image') => {
     console.log("file is deleted on cloudinary reponse: ", response);
   } catch (error) {
     console.log(error);
-    return  null;
+    return null;
   }
 };
 
