@@ -31,8 +31,11 @@ const generateAccessAndRefreshTokens = async (userId) => {
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
 
-  if (fullName === "") {
-    throw new ApiError(400, "fullName is required");
+  if (!fullName || !email || !username || !password) {
+    throw new ApiError(
+      400,
+      "Fill all the required fields marked with *"
+    );
   }
 
   const existedUser = await User.findOne({
