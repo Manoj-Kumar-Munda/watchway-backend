@@ -9,11 +9,10 @@ app.use(
     credentials: true,
   })
 );
-
-app.use(express.json(express.json({ limit: "16kb" })));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
-app.use(express.static("public"));
+app.use(express.static("/public"));
 app.use(cookieParser());
+app.use(express.json());
 
 //routes import
 import userRouter from "./routes/user.routes.js";

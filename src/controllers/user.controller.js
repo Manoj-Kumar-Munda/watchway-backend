@@ -32,10 +32,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
 
   if (!fullName || !email || !username || !password) {
-    throw new ApiError(
-      400,
-      "Fill all the required fields marked with *"
-    );
+    throw new ApiError(400, "Fill all the required fields marked with *");
   }
 
   const existedUser = await User.findOne({
@@ -46,9 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User with username or email already exists");
   }
 
-  console.log("files: ", req.files);
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
   let coverImageLocalPath;
   if (
@@ -123,7 +118,7 @@ const loginUser = asyncHandler(async (req, res) => {
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     sameSite: "strict",
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000, //1day
   });
 
   res.cookie("refreshToken", refreshToken, {
@@ -132,15 +127,9 @@ const loginUser = asyncHandler(async (req, res) => {
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        user: loggedInUser,
-      },
-      "User logged in successfully"
-    )
-  );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, loggedInUser, "User logged in successfully"));
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
