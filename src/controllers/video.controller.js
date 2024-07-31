@@ -9,12 +9,10 @@ import {
   uploadOnCloudinary,
 } from "../utils/cloudinary.js";
 
-const getSortingOptions = asyncHandler(async (req, res) => {
-  return res.status(200).json(new ApiResponse(200, sortingOptons, ""));
-});
+
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { userId } = req.query;
+  let { userId, page, limit, sortBy, sortOrder } = req.query;
 
   if (!userId) {
     throw new ApiError(400, "UserId is required");
@@ -68,9 +66,9 @@ const getAllVideos = asyncHandler(async (req, res) => {
     limit: limit,
   });
 
-  if (videos.docs.length === 0) {
-    throw new ApiError(400, "No videos available");
-  }
+  // if (videos.docs.length === 0) {
+  //   throw new ApiError(400, "No videos available");
+  // }
 
   return res.status(200).json(new ApiResponse(200, videos, ""));
 });
@@ -335,7 +333,6 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 });
 
 export {
-  getSortingOptions,
   getAllVideos,
   getSearchResults,
   publishAVideo,
