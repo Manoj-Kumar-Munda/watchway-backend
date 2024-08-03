@@ -22,7 +22,7 @@ videoRouter.route("/")
   verifyJWT,
   upload.fields([
     {
-      name: "videoFile",
+      name: "video",
       maxCount: 1,
     },
     {

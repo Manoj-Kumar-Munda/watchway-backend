@@ -28,7 +28,6 @@ const uploadOnCloudinary = async (localFilePath) => {
 };
 
 const deleteAssetOnCloudinary = async (publicId, type = "image") => {
-  console.log("inside cloudinary", publicId);
   try {
     if (!publicId) {
       return null;

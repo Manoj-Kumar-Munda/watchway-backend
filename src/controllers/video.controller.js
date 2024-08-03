@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { sortingOptons, Video } from "../models/video.model.js";
+import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -9,14 +9,8 @@ import {
   uploadOnCloudinary,
 } from "../utils/cloudinary.js";
 
-
-
 const getAllVideos = asyncHandler(async (req, res) => {
   let { userId, page, limit, sortBy, sortOrder } = req.query;
-
-  if (!userId) {
-    throw new ApiError(400, "UserId is required");
-  }
 
   page = (parseInt(page) && (page < 1 ? 1 : page)) || 1;
   limit = (parseInt(limit) && (limit < 1 ? 10 : limit)) || 10;
@@ -24,51 +18,85 @@ const getAllVideos = asyncHandler(async (req, res) => {
   sortBy = req.query.sortBy || "createdAt";
   sortOrder = (parseInt(sortOrder) && (sortOrder >= 1 ? 1 : -1)) || 1;
 
-  const aggregate = Video.aggregate([
-    {
-      $match: {
-        $and: [
-          { owner: new mongoose.Types.ObjectId(userId) },
-          { isPublished: true },
-        ],
-      },
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "owner",
-        foreignField: "_id",
-        pipeline: [
-          {
-            $project: {
-              username: 1,
-              avatar: 1,
-            },
+  let aggregate;
+
+  //return all videos to be displayed on homepage
+  if (!userId) {
+    aggregate =
+      await Video.aggregate[
+        ({
+          $match: {
+            isPublished: true,
           },
-        ],
-        as: "owner",
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "owner",
+            pipeline: [
+              {
+                $project: {
+                  fullName: 1,
+                  avatar: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: "$owner",
+          },
+        })
+      ];
+  } else {
+    //return videos of a particular channel
+    aggregate = Video.aggregate([
+      {
+        $match: {
+          $and: [
+            { owner: new mongoose.Types.ObjectId(userId) },
+            { isPublished: true },
+          ],
+        },
       },
-    },
-    {
-      $unwind: {
-        path: "$owner",
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $project: {
+                username: 1,
+                avatar: 1,
+              },
+            },
+          ],
+          as: "owner",
+        },
       },
-    },
-    {
-      $sort: {
-        [sortBy]: sortOrder,
+      {
+        $unwind: {
+          path: "$owner",
+        },
       },
-    },
-  ]);
+      {
+        $sort: {
+          [sortBy]: sortOrder,
+        },
+      },
+    ]);
+  }
 
   const videos = await Video.aggregatePaginate(aggregate, {
     page: page,
     limit: limit,
   });
 
-  // if (videos.docs.length === 0) {
-  //   throw new ApiError(400, "No videos available");
-  // }
+ 
 
   return res.status(200).json(new ApiResponse(200, videos, ""));
 });
@@ -142,11 +170,12 @@ const getSearchResults = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
   // TODO: get video, upload to cloudinary, create video
+
   if (!title) {
     throw new ApiError(400, "Video title is required");
   }
 
-  const videoFileLocalPath = req.files?.videoFile[0]?.path;
+  const videoFileLocalPath = req.files?.video[0]?.path;
   const thumbnailLocalPath = req.files?.thumbnail[0]?.path;
 
   if (!videoFileLocalPath) {
@@ -156,7 +185,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   if (!thumbnailLocalPath) {
     throw new ApiError(400, "Thumbnail is required");
   }
-
+  console.log(videoFileLocalPath);
   const videoURL = await uploadOnCloudinary(videoFileLocalPath);
   const thumbnailURL = await uploadOnCloudinary(thumbnailLocalPath);
 
