@@ -4,6 +4,7 @@ import {
   changeThumbnail,
   deleteVideo,
   getAllVideos,
+  getChannelVideos,
   getSearchResults,
   getVideoById,
   publishAVideo,
@@ -32,6 +33,7 @@ videoRouter.route("/")
   ]),
   publishAVideo
 );
+videoRouter.route("/channel").get(getChannelVideos);
 videoRouter.route("/status/:videoId").patch(verifyJWT, togglePublishStatus);
 
 videoRouter.route("/update/:videoId").patch(verifyJWT, updateVideo);

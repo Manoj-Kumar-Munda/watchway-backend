@@ -22,44 +22,12 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
   //return all videos to be displayed on homepage
   if (!userId) {
-    aggregate =
-      await Video.aggregate[
-        ({
-          $match: {
-            isPublished: true,
-          },
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "owner",
-            foreignField: "_id",
-            as: "owner",
-            pipeline: [
-              {
-                $project: {
-                  fullName: 1,
-                  avatar: 1,
-                },
-              },
-            ],
-          },
-        },
-        {
-          $unwind: {
-            path: "$owner",
-          },
-        })
-      ];
-  } else {
-    //return videos of a particular channel
-    aggregate = Video.aggregate([
+    console.log("hello");
+
+    aggregate = await Video.aggregate([
       {
         $match: {
-          $and: [
-            { owner: new mongoose.Types.ObjectId(userId) },
-            { isPublished: true },
-          ],
+          isPublished: true,
         },
       },
       {
@@ -67,26 +35,27 @@ const getAllVideos = asyncHandler(async (req, res) => {
           from: "users",
           localField: "owner",
           foreignField: "_id",
+          as: "owner",
           pipeline: [
             {
               $project: {
-                username: 1,
+                fullName: 1,
                 avatar: 1,
               },
             },
           ],
-          as: "owner",
         },
       },
       {
-        $unwind: {
-          path: "$owner",
+        $addFields: {
+          owner: { $first: "$owner" },
         },
       },
       {
-        $sort: {
-          [sortBy]: sortOrder,
-        },
+        $skip: (page - 1) * limit,
+      },
+      {
+        $limit: limit,
       },
     ]);
   }
@@ -96,7 +65,60 @@ const getAllVideos = asyncHandler(async (req, res) => {
     limit: limit,
   });
 
+  return res.status(200).json(new ApiResponse(200, videos, ""));
+});
+
+const getChannelVideos = asyncHandler(async (req, res) => {
+  let {id, page, limit, sortBy, sortOrder } = req.query;
  
+
+  page = (parseInt(page) && (page < 1 ? 1 : page)) || 1;
+  limit = (parseInt(limit) && (limit < 1 ? 10 : limit)) || 10;
+
+  sortBy = req.query.sortBy || "createdAt";
+  sortOrder = (parseInt(sortOrder) && (sortOrder >= 1 ? 1 : -1)) || 1;
+
+  const aggregate = Video.aggregate([
+    {
+      $match: {
+        $and: [
+          { owner: new mongoose.Types.ObjectId(id) },
+          { isPublished: true },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              avatar: 1,
+            },
+          },
+        ],
+        as: "owner",
+      },
+    },
+    {
+      $unwind: {
+        path: "$owner",
+      },
+    },
+    {
+      $sort: {
+        [sortBy]: sortOrder,
+      },
+    },
+  ]);
+
+  const videos = await Video.aggregatePaginate(aggregate, {
+    page: page,
+    limit: limit,
+  });
 
   return res.status(200).json(new ApiResponse(200, videos, ""));
 });
@@ -370,4 +392,5 @@ export {
   changeThumbnail,
   deleteVideo,
   togglePublishStatus,
+  getChannelVideos,
 };
