@@ -18,47 +18,40 @@ const getAllVideos = asyncHandler(async (req, res) => {
   sortBy = req.query.sortBy || "createdAt";
   sortOrder = (parseInt(sortOrder) && (sortOrder >= 1 ? 1 : -1)) || 1;
 
-  let aggregate;
-
   //return all videos to be displayed on homepage
-  if (!userId) {
-    console.log("hello");
-
-    aggregate = await Video.aggregate([
-      {
-        $match: {
-          isPublished: true,
-        },
+  const aggregate = Video.aggregate([
+    {
+      $match: {
+        isPublished: true,
       },
-      {
-        $lookup: {
-          from: "users",
-          localField: "owner",
-          foreignField: "_id",
-          as: "owner",
-          pipeline: [
-            {
-              $project: {
-                fullName: 1,
-                avatar: 1,
-              },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        pipeline: [
+          {
+            $project: {
+              fullName: 1,
+              avatar: 1,
             },
-          ],
-        },
+          },
+        ],
+        as: "owner",
       },
-      {
-        $addFields: {
-          owner: { $first: "$owner" },
-        },
+    },
+    {
+      $unwind: {
+        path: "$owner",
       },
-      {
-        $skip: (page - 1) * limit,
+    },
+    {
+      $sort: {
+        [sortBy]: sortOrder,
       },
-      {
-        $limit: limit,
-      },
-    ]);
-  }
+    },
+  ]);
 
   const videos = await Video.aggregatePaginate(aggregate, {
     page: page,
@@ -69,8 +62,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 });
 
 const getChannelVideos = asyncHandler(async (req, res) => {
-  let {id, page, limit, sortBy, sortOrder } = req.query;
- 
+  let { id, page, limit, sortBy, sortOrder } = req.query;
 
   page = (parseInt(page) && (page < 1 ? 1 : page)) || 1;
   limit = (parseInt(limit) && (limit < 1 ? 10 : limit)) || 10;
