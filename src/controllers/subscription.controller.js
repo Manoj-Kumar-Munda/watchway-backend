@@ -93,7 +93,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 const getSubscribedChannels = asyncHandler(async (req, res) => {
   const { subscriberId } = req.params;
 
-  if(!isValidObjectId(subscriberId)){
+  if (!isValidObjectId(subscriberId)) {
     throw new ApiError(400, "Invalid subscriberId");
   }
 
@@ -104,42 +104,32 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
       },
     },
     {
-      $group: {
-        _id: "$subscriber",
-        channelSubscribed: {
-          $push: "$channel",
-        },
-      },
-    },
-    {
       $lookup: {
         from: "users",
-        localField: "channelSubscribed",
+        localField: "channel",
         foreignField: "_id",
-        as: "channelSubscribed",
+        as: "subscribedChannels",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
+            },
+          },
+        ],
       },
     },
     {
       $addFields: {
-        subscribedChannelCount: {
-          $size: "$channelSubscribed",
+        subCount: {
+          $size: "$subscribedChannels",
         },
-      },
-    },
-    {
-      $project: {
-        channelSubscribed: {
-          fullName: 1,
-          username: 1,
-          avatar: 1,
-          email: 1
-        },
-        subscribedChannelCount: 1,
       },
     },
   ]);
 
-  if(!subscribedChannels){
+  if (!subscribedChannels) {
     throw new ApiError(500, "error while fetching subscibed channel list");
   }
 
