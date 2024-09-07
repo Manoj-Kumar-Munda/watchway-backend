@@ -92,7 +92,6 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
   const { subscriberId } = req.params;
-
   if (!isValidObjectId(subscriberId)) {
     throw new ApiError(400, "Invalid subscriberId");
   }
@@ -165,11 +164,14 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
       },
     },
   ]);
+
+
+  
   if (!subscribedChannels) {
     throw new ApiError(500, "error while fetching subscibed channel list");
   }
 
-  return res.status(200).json(new ApiResponse(200, subscribedChannels[0]));
+  return res.status(200).json(new ApiResponse(200, subscribedChannels));
 });
 
 export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };
