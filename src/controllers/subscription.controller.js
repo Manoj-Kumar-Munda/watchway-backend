@@ -1,4 +1,4 @@
-import mongoose, { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId, Mongoose } from "mongoose";
 import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -43,45 +43,64 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
 
-  const subscibers = await Subscription.aggregate([
-    {
-      $match: {
-        channel: new mongoose.Types.ObjectId(channelId),
-      },
-    },
-    {
-      $group: {
-        _id: "$channel",
-        subscribers: {
-          $push: "$subscriber",
+  const subscibers = await Subscription.aggregate(
+    
+    [
+      {
+        $match: {
+          channel: new mongoose.Types.ObjectId(channelId),
         },
       },
-    },
     {
       $lookup: {
         from: "users",
-        localField: "subscribers",
+        localField: "subscriber",
         foreignField: "_id",
         as: "subscribers",
-        pipeline: [
+        pipeline : [
+          {
+            $lookup: {
+              from: "subscriptions",
+              localField: "_id",
+              foreignField: "channel",
+              as: "subsList"
+            }
+          },
+          {
+            $addFields: {
+              isSubscribed: {
+                $cond: {
+                  if: {
+                    $in: [ new mongoose.Types.ObjectId(channelId), "$subsList.subscriber"]
+                  },
+                  then : true,
+                  else: false
+                }
+              }
+            }
+          },
           {
             $project: {
               username: 1,
-              email: 1,
-              avatar: 1,
-            },
-          },
-        ],
-      },
+                fullName: 1,
+                totalSubs: 1,
+                isSubscribed: 1,
+                avatar: 1,
+            }
+          }
+        ]
+      }
     },
-    {
-      $addFields: {
-        subsCount: {
-          $size: "$subscribers",
+     {
+        $project: {
+          _id: 0,
+          subscribers: 1
         },
       },
-    },
-  ]);
+     
+    ]
+
+);
 
   if (!subscibers) {
     throw new ApiError(500, "Error while fetching subsribers list");
