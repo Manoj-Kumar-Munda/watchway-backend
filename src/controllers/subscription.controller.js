@@ -111,9 +111,39 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
         as: "subscribedChannels",
         pipeline: [
           {
+            $lookup: {
+              from: "subscriptions",
+              localField: "_id",
+              foreignField: "channel",
+              as: "subscribers",
+            },
+          },
+          {
+            $addFields: {
+              totalSubs: {
+                $size: "$subscribers",
+              },
+              isSubscribed: {
+                $cond: {
+                  if: {
+                    $in: [
+                      new mongoose.Types.ObjectId(subscriberId),
+                      "$subscribers.subscriber",
+                    ],
+                  },
+
+                  then: true,
+                  else: false,
+                },
+              },
+            },
+          },
+          {
             $project: {
               username: 1,
               fullName: 1,
+              totalSubs: 1,
+              isSubscribed: 1,
               avatar: 1,
             },
           },
@@ -127,13 +157,19 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
         },
       },
     },
+    {
+      $project: {
+        _id: 0,
+        subscribedChannels: 1,
+        subCount: 1,
+      },
+    },
   ]);
-
   if (!subscribedChannels) {
     throw new ApiError(500, "error while fetching subscibed channel list");
   }
 
-  return res.status(200).json(new ApiResponse(200, subscribedChannels));
+  return res.status(200).json(new ApiResponse(200, subscribedChannels[0]));
 });
 
 export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };
