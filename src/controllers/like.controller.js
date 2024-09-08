@@ -114,6 +114,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     {
       $match: {
         likedBy: new mongoose.Types.ObjectId(req.user._id),
+        video: { $ne: null },
       },
     },
     {
@@ -121,50 +122,43 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         from: "videos",
         localField: "video",
         foreignField: "_id",
-        as: "likedVideos",
+        as: "videoInfo",
         pipeline: [
           {
             $lookup: {
               from: "users",
               localField: "owner",
               foreignField: "_id",
-              as: "ownerDetails",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    username: 1,
+                    fullName: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
             },
           },
+
           {
-            $unwind: "$ownerDetails",
+            $unwind: {
+              path: "$owner",
+            },
           },
         ],
       },
     },
     {
-      $unwind: "$likedVideos",
-    },
-    {
-      $sort: {
-        createdAt: -1,
+      $unwind: {
+        path: "$videoInfo",
       },
     },
     {
       $project: {
-        _id: 0,
-        likedVideos: {
-          _id: 1,
-          videoFile: 1,
-          thumbnail: 1,
-          owner: 1,
-          title: 1,
-          description: 1,
-          views: 1,
-          duration: 1,
-          createdAt: 1,
-          isPublished: 1,
-          ownerDetails: {
-            username: 1,
-            fullName: 1,
-            avatar: 1,
-          },
-        },
+        _id: 1,
+        videoInfo: 1,
       },
     },
   ]);
