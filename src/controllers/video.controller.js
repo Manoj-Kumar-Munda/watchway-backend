@@ -236,8 +236,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   if (!videoId) {
     throw new ApiError(400, "VideoId is required");
   }
-
-  const video = await Video.findById(videoId);
+  const video = await Video.findById(new mongoose.Types.ObjectId(videoId));
 
   if (!video) {
     throw new ApiError(500, "Internal server error");
