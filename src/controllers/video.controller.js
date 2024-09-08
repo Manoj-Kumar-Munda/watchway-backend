@@ -236,7 +236,45 @@ const getVideoById = asyncHandler(async (req, res) => {
   if (!videoId) {
     throw new ApiError(400, "VideoId is required");
   }
-  const video = await Video.findById(new mongoose.Types.ObjectId(videoId));
+  const video = await Video.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(videoId),
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "video",
+        as: "videoLikes",
+      },
+    },
+    {
+      $addFields: {
+        likesCount: {
+          $size: "$videoLikes",
+        },
+        isLiked: {
+          $cond: {
+            if: {
+              $in: [
+                new mongoose.Types.ObjectId(req?.user?.id),
+                "$videoLikes.likedBy",
+              ],
+            },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        videoLikes: 0,
+      },
+    },
+  ]);
 
   if (!video) {
     throw new ApiError(500, "Internal server error");
