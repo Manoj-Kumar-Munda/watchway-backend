@@ -9,6 +9,7 @@ import {
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { Video } from "../models/video.model.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -339,7 +340,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   const channel = await User.aggregate([
     {
       $match: {
-       _id: new mongoose.Types.ObjectId(id),
+        _id: new mongoose.Types.ObjectId(id),
       },
     },
     {
@@ -403,6 +404,37 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(200, channel[0], "User channel fetched successfully")
     );
+});
+
+const updateWatchHistory = asyncHandler(async (req, res) => {
+
+  const { videoId } = req.body;
+  if (!videoId) {
+    throw new ApiError(400, "VideoId is required");
+  }
+  const video = await Video.findByIdAndUpdate(videoId, {
+    $inc: {
+      views: 1,
+    },
+  });
+  if (!video) {
+    throw new ApiError(400, "Video unavailable or invalid videoId");
+  }
+  const updatedUser = await User.findOneAndUpdate(
+    {
+      _id: new mongoose.Types.ObjectId(req.user._id),
+    },
+    {
+      $addToSet: {
+        watchHistory: new mongoose.Types.ObjectId(videoId),
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, updatedUser, "Watch history updated"));
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
@@ -470,5 +502,6 @@ export {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
+  updateWatchHistory,
   getWatchHistory,
 };

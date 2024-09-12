@@ -126,7 +126,7 @@ const getSearchResults = asyncHandler(async (req, res) => {
     10;
   const query = req.query.query || "";
   const sortBy = req.query.sortBy || "createdAt";
-  const sortOrder = (parseInt(sortOrder) && (sortOrder >= 1 ? 1 : -1)) || 1;
+  const sortOrder = (parseInt(req.query.sortOrder) && (req.query.sortOrder >= 1 ? 1 : -1)) || 1;
 
   const aggregate = Video.aggregate([
     {
@@ -149,8 +149,8 @@ const getSearchResults = asyncHandler(async (req, res) => {
         pipeline: [
           {
             $project: {
+              fullName: 1,
               username: 1,
-              email: 1,
               avatar: 1,
             },
           },
@@ -175,16 +175,11 @@ const getSearchResults = asyncHandler(async (req, res) => {
     limit,
   });
 
-  if (searchResults.docs.length === 0) {
-    throw new ApiError(404, "No video found");
-  }
-
   return res.status(200).json(new ApiResponse(200, searchResults));
 });
 
 const publishAVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
-  // TODO: get video, upload to cloudinary, create video
 
   if (!title) {
     throw new ApiError(400, "Video title is required");
