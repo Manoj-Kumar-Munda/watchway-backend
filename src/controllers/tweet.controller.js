@@ -28,7 +28,7 @@ const createTweet = asyncHandler(async (req, res) => {
 
 const getUserTweets = asyncHandler(async (req, res) => {
   const { userId } = req.params;
-  
+
   if (!isValidObjectId(userId)) {
     throw new ApiError(400, "Invalid userId");
   }
@@ -82,12 +82,20 @@ const getUserTweets = asyncHandler(async (req, res) => {
         isLiked: {
           $cond: {
             if: {
-              $in: [new mongoose.Types.ObjectId(req.user._id), "$likesInfo.likedBy"],
+              $in: [
+                new mongoose.Types.ObjectId(req.user._id),
+                "$likesInfo.likedBy",
+              ],
             },
             then: true,
             else: false,
           },
         },
+      },
+    },
+    {
+      $sort: {
+        createdAt: -1,
       },
     },
     {
