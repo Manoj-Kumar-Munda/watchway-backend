@@ -16,65 +16,69 @@ const getVideoComments = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid videoId");
   }
 
-  const aggregate = Comment.aggregate(
-    [
-        {
-          $match: {
-            video: new mongoose.Types.ObjectId(videoId)
-          }
+  const aggregate = Comment.aggregate([
+    {
+      $match: {
+        video: new mongoose.Types.ObjectId(videoId),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+      },
+    },
+    {
+      $unwind: {
+        path: "$owner",
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "comment",
+        as: "likes",
+      },
+    },
+    {
+      $addFields: {
+        totalLikes: {
+          $size: "$likes",
         },
-        {
-          $lookup: {
-            from: "users",
-            localField: "owner",
-            foreignField: "_id",
-            as: "owner"
-          }
-        },
-        {
-          $unwind: {
-            path: '$owner'
-          }
-        },
-        {
-          $lookup: {
-            from: "likes",
-            localField: "_id",
-            foreignField: "comment",
-            as: "likes"
-          }
-        },
-        {
-          $addFields: {
-            totalLikes: {
-              $size: "$likes"
+        isLiked: {
+          $cond: {
+            if: {
+              $in: [req.user._id, "$likes.likedBy"],
             },
-            isLiked: {
-              $cond: {
-                if: {
-                  $in: [req.user._id, "$likes.likedBy"]
-                },
-                then : true,
-                else: false
-              }
-            }
-          }
+            then: true,
+            else: false,
+          },
         },
-        {
-          $project: {
-            content: 1,
-            createdAt: 1,
-            owner: {
-              username: 1,
-              fullName: 1,
-              avatar: 1
-            },
-            totalLikes: 1,
-            isLiked: 1
-          }
-        }
-      ]
-  );
+      },
+    },
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+    {
+      $project: {
+        content: 1,
+        video: 1,
+        createdAt: 1,
+        owner: {
+          username: 1,
+          fullName: 1,
+          avatar: 1,
+        },
+        totalLikes: 1,
+        isLiked: 1,
+      },
+    },
+  ]);
 
   const comments = await Comment.aggregatePaginate(aggregate, {
     page,
@@ -93,7 +97,7 @@ const addComment = asyncHandler(async (req, res) => {
   }
 
   const video = await Video.findById(videoId);
-  if(!video){
+  if (!video) {
     throw new ApiError(404, "Video not found");
   }
 
@@ -124,7 +128,7 @@ const updateComment = asyncHandler(async (req, res) => {
 
   const comment = await Comment.findById(commentId);
 
-  if(!comment){
+  if (!comment) {
     throw new ApiError(404, "Comment not found");
   }
 
