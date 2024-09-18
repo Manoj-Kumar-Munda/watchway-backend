@@ -43,64 +43,67 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
 
-  const subscibers = await Subscription.aggregate(
-    
-    [
-      {
-        $match: {
-          channel: new mongoose.Types.ObjectId(channelId),
-        },
+  const subscibers = await Subscription.aggregate([
+    {
+      $match: {
+        channel: new mongoose.Types.ObjectId(channelId),
       },
+    },
     {
       $lookup: {
         from: "users",
         localField: "subscriber",
         foreignField: "_id",
-        as: "subscribers",
-        pipeline : [
+        as: "subscriberInfo",
+        pipeline: [
           {
             $lookup: {
               from: "subscriptions",
               localField: "_id",
               foreignField: "channel",
-              as: "subsList"
-            }
+              as: "subsList",
+            },
           },
           {
             $addFields: {
               isSubscribed: {
                 $cond: {
                   if: {
-                    $in: [ new mongoose.Types.ObjectId(channelId), "$subsList.subscriber"]
+                    $in: [
+                      new mongoose.Types.ObjectId(channelId),
+                      "$subsList.subscriber",
+                    ],
                   },
-                  then : true,
-                  else: false
-                }
-              }
-            }
+                  then: true,
+                  else: false,
+                },
+              },
+            },
           },
           {
             $project: {
               username: 1,
-                fullName: 1,
-                totalSubs: 1,
-                isSubscribed: 1,
-                avatar: 1,
-            }
-          }
-        ]
-      }
-    },
-     {
-        $project: {
-          _id: 0,
-          subscribers: 1
-        },
+              fullName: 1,
+              totalSubs: 1,
+              isSubscribed: 1,
+              avatar: 1,
+            },
+          },
+        ],
       },
-     
-    ]
-
-);
+    },
+    {
+      $unwind: {
+        path: "$subscriberInfo",
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        subscriberInfo: 1,
+      },
+    },
+  ]);
 
   if (!subscibers) {
     throw new ApiError(500, "Error while fetching subsribers list");
@@ -184,8 +187,6 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     },
   ]);
 
-
-  
   if (!subscribedChannels) {
     throw new ApiError(500, "error while fetching subscibed channel list");
   }
