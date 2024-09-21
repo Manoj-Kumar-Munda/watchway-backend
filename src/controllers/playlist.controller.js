@@ -92,13 +92,27 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid playlistId");
   }
 
-  const playlist = await Playlist.findById(playlistId);
+  const playlist = await Playlist.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(playlistId),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "videos",
+        foreignField: "_id",
+        as: "videos",
+      },
+    },
+  ]);
 
   if (!playlist) {
     throw new ApiError(404, "Playlist not found");
   }
 
-  return res.status(200).json(new ApiResponse(200, playlist, ""));
+  return res.status(200).json(new ApiResponse(200, playlist[0], ""));
 });
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
