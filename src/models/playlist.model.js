@@ -16,6 +16,10 @@ const playlistSchema = Schema(
         ref: "Video",
       },
     ],
+    coverImage: {
+      type: String,
+      default: "",
+    },
     owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
