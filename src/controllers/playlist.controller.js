@@ -162,21 +162,16 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 });
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
-  const { playlistId, videoId } = req.params;
+  const { playlistId } = req.params;
+  const { videoIds } = req.body;
   if (!playlistId) {
-    throw new ApiError("PlaylistId is required");
+    throw new ApiError(400, "PlaylistId is required");
   }
-
-  if (!videoId) {
-    throw new ApiError("VideoId is required");
+  if (!videoIds) {
+    throw new ApiError(400, "VideoId is required");
   }
-
-  const video = await Video.findById(videoId);
   const playlist = await Playlist.findById(playlistId);
-
-  if (
-    !(playlist.owner.equals(req.user?._id) && video.owner.equals(req.user._id))
-  ) {
+  if (!playlist.owner.equals(req.user?._id)) {
     throw new ApiError(400, "Only owner can make changes to othe playlist");
   }
 
@@ -184,11 +179,20 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     playlistId,
     {
       $pull: {
-        videos: videoId,
+        videos: { $in: videoIds },
       },
     },
     { new: true }
   );
+
+  if (updatedPlaylist?.videos?.length > 0) {
+    const videoId =
+      updatedPlaylist?.videos[updatedPlaylist?.videos?.length - 1];
+    const video = await Video.findById(videoId);
+    await Playlist.findByIdAndUpdate(playlistId, {
+      coverImage: video?.thumbnail,
+    });
+  }
 
   if (!updatedPlaylist) {
     throw new ApiError(500, "Error while removing the video from the playlist");
