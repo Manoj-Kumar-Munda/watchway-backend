@@ -244,18 +244,18 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
         fullName,
-        email: email,
+        email,
       },
     },
     {
       new: true,
     }
-  ).select("-password");
+  ).select("-password -refreshToken");
 
   return res
     .status(200)
@@ -407,7 +407,6 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 });
 
 const updateWatchHistory = asyncHandler(async (req, res) => {
-
   const { videoId } = req.body;
   if (!videoId) {
     throw new ApiError(400, "VideoId is required");
