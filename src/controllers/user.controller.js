@@ -97,15 +97,13 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({
     $or: [{ username: userId }, { email: userId }],
   });
-
   if (!user) {
     throw new ApiError(404, "User doesn't exist");
   }
 
   const isPassswordValid = await user.isPasswordCorrect(password);
-
   if (!isPassswordValid) {
-    throw new ApiError(401, "Invalid user credentials");
+    throw new ApiError(403, "Password didn't match");
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
