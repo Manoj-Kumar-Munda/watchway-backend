@@ -99,7 +99,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Some error occured.");
   }
 
-  return res.status(200).json(new ApiResponse(200, stats));
+  return res.status(200).json(new ApiResponse(200, stats[0]));
 });
 
 const getChannelVideos = asyncHandler(async (req, res) => {
