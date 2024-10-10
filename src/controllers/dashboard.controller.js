@@ -103,10 +103,31 @@ const getChannelStats = asyncHandler(async (req, res) => {
 });
 
 const getChannelVideos = asyncHandler(async (req, res) => {
-  const videos = await Video.find({ owner: req.user?._id });
+  const videos = await Video.aggregate([
+    {
+      $match: {
+        owner: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "video",
+        as: "likes",
+      },
+    },
+    {
+      $addFields: {
+        likes: {
+          $size: "$likes",
+        },
+      },
+    },
+  ]);
 
-  if(!videos){
-    return(404, "No videos uploaded");
+  if (!videos) {
+    return 404, "No videos uploaded";
   }
 
   return res.status(200).json(new ApiResponse(200, videos));
