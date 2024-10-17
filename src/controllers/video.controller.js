@@ -195,7 +195,6 @@ const publishAVideo = asyncHandler(async (req, res) => {
   if (!thumbnailLocalPath) {
     throw new ApiError(400, "Thumbnail is required");
   }
-  console.log(videoFileLocalPath);
   const videoURL = await uploadOnCloudinary(videoFileLocalPath);
   const thumbnailURL = await uploadOnCloudinary(thumbnailLocalPath);
 
