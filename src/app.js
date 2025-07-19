@@ -3,12 +3,20 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 const app = express();
-app.use(
-  cors({
-    origin: "*",
-    credentials: true,
-  })
-);
+const allowedOrigins = ["https://watchway.vercel.app", "http://localhost:3000"];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("/public"));
 app.use(cookieParser());
