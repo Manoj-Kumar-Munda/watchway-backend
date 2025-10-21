@@ -116,13 +116,15 @@ const loginUser = asyncHandler(async (req, res) => {
 
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "None",
+    secure: true,
     maxAge: 24 * 60 * 60 * 1000, //1day
   });
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "None",
+    secure: true,
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 

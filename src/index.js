@@ -5,7 +5,12 @@ import dotenv from "dotenv";
 import connectDB from "./db/index.js";
 
 const app = express();
-const allowedOrigins = ["https://watchway.vercel.app", "http://localhost:3000", "https://watchway.manojk.online"];
+// const allowedOrigins = [
+//   "https://watchway.vercel.app",
+//   "http://localhost:3000",
+//   "https://watchway.manojk.online",
+//   "http://31.97.63.142",
+// ];
 
 dotenv.config({
   path: "./env",
@@ -21,14 +26,19 @@ connectDB()
     console.error("Mongo db connection failed!!! ", err);
   });
 
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     if (!origin) return callback(null, true);
+//     if (allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     }
+//     return callback(new Error("Not allowed by CORS"));
+//   },
+//   credentials: true,
+// };
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
-  },
+  origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
 };
 
