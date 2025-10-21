@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import connectDB from "./db/index.js";
 
 const app = express();
-const allowedOrigins = ["https://watchway.vercel.app", "http://localhost:3000"];
+const allowedOrigins = ["https://watchway.vercel.app", "http://localhost:3000", "https://watchway.manojk.online"];
 
 dotenv.config({
   path: "./env",
