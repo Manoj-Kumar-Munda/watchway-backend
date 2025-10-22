@@ -147,12 +147,12 @@ const logoutUser = asyncHandler(async (req, res) => {
 
   res.clearCookie("accessToken", {
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "none",
   });
 
   res.clearCookie("refreshToken", {
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "none",
   });
   return res.status(200).json(new ApiResponse(200, {}, "User logged Out"));
 });
@@ -185,13 +185,13 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     });
 
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "none",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
