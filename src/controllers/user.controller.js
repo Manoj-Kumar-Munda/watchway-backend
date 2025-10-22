@@ -196,19 +196,19 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const { accessToken, newRefreshToken } =
       await generateAccessAndRefreshTokens(user._id);
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+    // res.cookie("accessToken", accessToken, {
+    //   httpOnly: true,
+    //   sameSite: "none",
+    //   secure: true,
+    //   maxAge: 24 * 60 * 60 * 1000,
+    // });
 
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    // res.cookie("refreshToken", newRefreshToken, {
+    //   httpOnly: true,
+    //   sameSite: "none",
+    //   secure: true,
+    //   maxAge: 30 * 24 * 60 * 60 * 1000,
+    // });
 
     return res
       .status(200)
