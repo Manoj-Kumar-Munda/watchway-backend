@@ -114,23 +114,34 @@ const loginUser = asyncHandler(async (req, res) => {
     "-password -refreshToken"
   );
 
-  res.cookie("accessToken", accessToken, {
+  {
+    /* 
+    
+     --will e implemented later
+    res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    sameSite: "None",
+    sameSite: "none",
     secure: true,
     maxAge: 24 * 60 * 60 * 1000, //1day
   });
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    sameSite: "None",
+    sameSite: "none",
     secure: true,
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
-
+*/
+  }
   return res
     .status(200)
-    .json(new ApiResponse(200, loggedInUser, "User logged in successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        { loggedInUser, accessToken, refreshToken },
+        "User logged in successfully"
+      )
+    );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -145,15 +156,17 @@ const logoutUser = asyncHandler(async (req, res) => {
     }
   );
 
-  res.clearCookie("accessToken", {
-    httpOnly: true,
-    sameSite: "none",
-  });
+  // res.clearCookie("accessToken", {
+  //   httpOnly: true,
+  //   sameSite: "none",
+  //   secure: true,
+  // });
 
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    sameSite: "none",
-  });
+  // res.clearCookie("refreshToken", {
+  //   httpOnly: true,
+  //   sameSite: "none",
+  //   secure: true,
+  // });
   return res.status(200).json(new ApiResponse(200, {}, "User logged Out"));
 });
 
@@ -186,12 +199,14 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       sameSite: "none",
+      secure: true,
       maxAge: 24 * 60 * 60 * 1000,
     });
 
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       sameSite: "none",
+      secure: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 

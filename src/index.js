@@ -12,13 +12,14 @@ const allowedOrigins = [
   "http://127.0.0.1:3000",
 ];
 
+const HOST = "192.168.31.95";
 dotenv.config({
   path: "./env",
 });
 
 connectDB()
   .then(() => {
-    app.listen(process.env.PORT || 8000, () => {
+    app.listen(process.env.PORT || 8000, HOST, () => {
       console.log(`Server is running at port ${process.env.PORT}`);
     });
   })
@@ -38,10 +39,7 @@ const corsOptions = {
 };
 
 app.use(
-  cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
-    credentials: true,
-  })
+  cors(corsOptions)
 );
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("/public"));
