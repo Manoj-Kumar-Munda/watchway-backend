@@ -2,24 +2,27 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import path from "path";
 import connectDB from "./db/index.js";
 
-const app = express();
-const allowedOrigins = [
-  "https://watchway.vercel.app",
-  "http://localhost:3000",
-  "https://watchway.manojk.online",
-  "http://127.0.0.1:3000",
-];
+const __dirname = import.meta.dirname;
 
-const HOST = "192.168.31.95";
+const app = express();
+
 dotenv.config({
-  path: "./env",
+  path: path.resolve(__dirname, "../.env"),
 });
+
+const corsOptions = {
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 connectDB()
   .then(() => {
-    app.listen(process.env.PORT || 8000, HOST, () => {
+    app.listen(process.env.PORT || 8000, () => {
       console.log(`Server is running at port ${process.env.PORT}`);
     });
   })
@@ -27,20 +30,6 @@ connectDB()
     console.error("Mongo db connection failed!!! ", err);
   });
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-};
-
-app.use(
-  cors(corsOptions)
-);
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("/public"));
 app.use(cookieParser());

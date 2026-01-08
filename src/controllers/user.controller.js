@@ -11,6 +11,14 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: isProduction ? "none" : "lax", 
+  secure: isProduction 
+};
+
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -133,6 +141,16 @@ const loginUser = asyncHandler(async (req, res) => {
   });
 */
   }
+
+  res.cookie("accessToken", accessToken, {
+    ...cookieOptions,
+    maxAge: 24 * 60 * 60 * 1000, //1day
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    ...cookieOptions,
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
   return res
     .status(200)
     .json(
@@ -156,17 +174,9 @@ const logoutUser = asyncHandler(async (req, res) => {
     }
   );
 
-  // res.clearCookie("accessToken", {
-  //   httpOnly: true,
-  //   sameSite: "none",
-  //   secure: true,
-  // });
+  res.clearCookie("accessToken");
 
-  // res.clearCookie("refreshToken", {
-  //   httpOnly: true,
-  //   sameSite: "none",
-  //   secure: true,
-  // });
+  res.clearCookie("refreshToken");
   return res.status(200).json(new ApiResponse(200, {}, "User logged Out"));
 });
 
@@ -209,6 +219,15 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     //   secure: true,
     //   maxAge: 30 * 24 * 60 * 60 * 1000,
     // });
+
+    res.cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    });
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return res
       .status(200)
