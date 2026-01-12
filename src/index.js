@@ -5,12 +5,10 @@ import dotenv from "dotenv";
 import path from "path";
 import connectDB from "./db/index.js";
 
-const __dirname = import.meta.dirname;
-
 const app = express();
 
 dotenv.config({
-  path: path.resolve(__dirname, "../.env"),
+  path: "./.env",
 });
 
 const corsOptions = {

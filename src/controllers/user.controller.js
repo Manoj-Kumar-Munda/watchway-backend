@@ -15,8 +15,8 @@ const isProduction = process.env.NODE_ENV === "production";
 
 const cookieOptions = {
   httpOnly: true,
-  sameSite: isProduction ? "none" : "lax", 
-  secure: isProduction 
+  sameSite: isProduction ? "none" : "lax",
+  secure: isProduction,
 };
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -122,34 +122,14 @@ const loginUser = asyncHandler(async (req, res) => {
     "-password -refreshToken"
   );
 
-  {
-    /* 
-    
-     --will e implemented later
-    res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,
-    maxAge: 24 * 60 * 60 * 1000, //1day
-  });
-
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
-*/
-  }
-
   res.cookie("accessToken", accessToken, {
     ...cookieOptions,
-    maxAge: 24 * 60 * 60 * 1000, //1day
+    maxAge: 15 * 60 * 1000, //1day
   });
 
   res.cookie("refreshToken", refreshToken, {
     ...cookieOptions,
-    maxAge: 30 * 24 * 60 * 60 * 1000,
+    maxAge:  24 * 60 * 60 * 1000,
   });
   return res
     .status(200)
@@ -174,9 +154,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     }
   );
 
-  res.clearCookie("accessToken");
-
-  res.clearCookie("refreshToken");
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
   return res.status(200).json(new ApiResponse(200, {}, "User logged Out"));
 });
 
@@ -203,7 +182,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, "Refresh token is expired or used");
     }
 
-    const { accessToken, newRefreshToken } =
+    const { accessToken, refreshToken} =
       await generateAccessAndRefreshTokens(user._id);
 
     // res.cookie("accessToken", accessToken, {
@@ -226,7 +205,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     });
     res.cookie("refreshToken", refreshToken, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     return res
