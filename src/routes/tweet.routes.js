@@ -4,7 +4,6 @@ import {
   createTweet,
   deleteTweet,
   getCommentsOnTweet,
-  getLikeStatus,
   getTweetById,
   getUserTweets,
   updateTweet,
@@ -24,7 +23,5 @@ router
   .route("/:tweetId/comments")
   .post(verifyJWT, addCommentToTweet)
   .get(getCommentsOnTweet);
-
-router.route("/:tweetId/likes").get(authStatus, getLikeStatus);
 
 export default router;

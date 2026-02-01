@@ -171,4 +171,33 @@ const getLikedVideos = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, likedVideos));
 });
 
-export { toggleCommentLike, toggleTweetLike, toggleVideoLike, getLikedVideos };
+const getLikeStatus = asyncHandler(async (req, res) => {
+  const { resource, id } = req.query;
+
+  if (!resource || !id) {
+    throw new ApiError(400, "Resource type and ID are required");
+  }
+
+  if (!["video", "comment", "tweet"].includes(resource)) {
+    throw new ApiError(400, "Invalid resource type");
+  }
+
+  if (!isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid resource ID");
+  }
+
+  const isLiked = await Like.findOne({
+    [resource]: id,
+    likedBy: req.user?._id,
+  });
+
+  return res.status(200).json(new ApiResponse(200, { isLiked: !!isLiked }));
+});
+
+export {
+  toggleCommentLike,
+  toggleTweetLike,
+  toggleVideoLike,
+  getLikedVideos,
+  getLikeStatus,
+};

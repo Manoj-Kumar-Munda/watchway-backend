@@ -363,27 +363,6 @@ const getTweetById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, tweet[0], "Tweet fetched successfully"));
 });
 
-const getLikeStatus = asyncHandler(async (req, res) => {
-  const { tweetId } = req.params;
-  if (!isValidObjectId(tweetId)) {
-    throw new ApiError(400, "Invalid tweetId");
-  }
-
-  const tweet = await Tweet.findById(tweetId);
-
-  if (!tweet) {
-    throw new ApiError(404, "Tweet not found");
-  }
-
-  const likeStatus = await Like.findOne({
-    tweet: tweetId,
-    likedBy: req.user._id,
-  });
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, likeStatus, "Like status fetched successfully"));
-});
 export {
   createTweet,
   getUserTweets,
@@ -392,5 +371,4 @@ export {
   addCommentToTweet,
   getCommentsOnTweet,
   getTweetById,
-  getLikeStatus,
 };
