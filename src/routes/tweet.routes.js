@@ -3,7 +3,7 @@ import {
   addCommentToTweet,
   createTweet,
   deleteTweet,
-  getCommentsOnTweet,
+  getCommentsByTweetId,
   getTweetById,
   getUserTweets,
   updateTweet,
@@ -22,6 +22,6 @@ router
 router
   .route("/:tweetId/comments")
   .post(verifyJWT, addCommentToTweet)
-  .get(getCommentsOnTweet);
+  .get(getCommentsByTweetId);
 
 export default router;

@@ -91,18 +91,6 @@ const getUserTweets = asyncHandler(async (req, res) => {
         comments: {
           $size: "$comments",
         },
-        isLiked: {
-          $cond: {
-            if: {
-              $in: [
-                new mongoose.Types.ObjectId(req.user._id),
-                "$likesInfo.likedBy",
-              ],
-            },
-            then: true,
-            else: false,
-          },
-        },
       },
     },
     {
@@ -116,7 +104,6 @@ const getUserTweets = asyncHandler(async (req, res) => {
         owner: 1,
         likeCount: 1,
         comments: 1,
-        isLiked: 1,
         createdAt: 1,
       },
     },
@@ -210,7 +197,7 @@ const addCommentToTweet = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, comment, "Comment added successfully"));
 });
 
-const getCommentsOnTweet = asyncHandler(async (req, res) => {
+const getCommentsByTweetId = asyncHandler(async (req, res) => {
   const { tweetId } = req.params;
 
   if (!isValidObjectId(tweetId)) {
@@ -258,9 +245,20 @@ const getCommentsOnTweet = asyncHandler(async (req, res) => {
       },
     },
     {
+      $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "tweet",
+        as: "comments",
+      },
+    },
+    {
       $addFields: {
         likeCount: {
           $size: "$likes",
+        },
+        comments: {
+          $size: "$comments",
         },
       },
     },
@@ -274,6 +272,7 @@ const getCommentsOnTweet = asyncHandler(async (req, res) => {
         content: 1,
         owner: 1,
         likeCount: 1,
+        comments: 1,
         createdAt: 1,
       },
     },
@@ -369,6 +368,6 @@ export {
   updateTweet,
   deleteTweet,
   addCommentToTweet,
-  getCommentsOnTweet,
+  getCommentsByTweetId,
   getTweetById,
 };
