@@ -186,12 +186,70 @@ const getLikeStatus = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid resource ID");
   }
 
+  const likeCount = await Like.countDocuments({
+    [resource]: id,
+  });
   const isLiked = await Like.findOne({
     [resource]: id,
     likedBy: req.user?._id,
   });
 
-  return res.status(200).json(new ApiResponse(200, { isLiked: !!isLiked }));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { isLiked: !!isLiked, likeCount }));
+});
+
+const getBatchLikeStatus = asyncHandler(async (req, res) => {
+  const { resourceType, resourceIds } = req.body;
+
+  if (!resourceType || !resourceIds) {
+    throw new ApiError(400, "Resource type and IDs are required");
+  }
+
+  if (!["video", "comment", "tweet"].includes(resourceType)) {
+    throw new ApiError(400, "Invalid resource type");
+  }
+
+  if (
+    !Array.isArray(resourceIds) ||
+    resourceIds.some((id) => !isValidObjectId(id))
+  ) {
+    throw new ApiError(400, "Invalid resource IDs");
+  }
+
+  const ids = resourceIds.map((id) => new mongoose.Types.ObjectId(id));
+
+  const userId = req?.user?._id || null;
+
+  const stats = await Like.aggregate([
+    {
+      $match: {
+        [resourceType]: { $in: ids },
+      },
+    },
+    {
+      $group: {
+        _id: `$${resourceType}`,
+        likeCount: { $sum: 1 },
+        isLiked: {
+          $max: {
+            $cond: [{ $eq: ["$likedBy", userId] }, true, false],
+          },
+        },
+      },
+    },
+  ]);
+
+  const result = ids.map((id) => {
+    const stat = stats.find((s) => s._id.equals(id));
+    return {
+      resourceId: id,
+      likeCount: stat ? stat.likeCount : 0,
+      isLiked: stat ? stat.isLiked : false,
+    };
+  });
+
+  return res.status(200).json(new ApiResponse(200, result));
 });
 
 export {
@@ -200,4 +258,5 @@ export {
   toggleVideoLike,
   getLikedVideos,
   getLikeStatus,
+  getBatchLikeStatus,
 };
