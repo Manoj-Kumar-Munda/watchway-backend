@@ -111,7 +111,15 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 });
 
 const getLikedVideos = asyncHandler(async (req, res) => {
-  const likedVideos = await Like.aggregate([
+  let { page, limit, sortBy, sortOrder } = req.query;
+
+  page = (parseInt(page) && (page < 1 ? 1 : page)) || 1;
+  limit = (parseInt(limit) && (limit < 1 ? 10 : limit)) || 10;
+
+  sortBy = req.query.sortBy || "createdAt";
+  sortOrder = (parseInt(sortOrder) && (sortOrder >= 1 ? 1 : -1)) || 1;
+
+  const aggregate = Like.aggregate([
     {
       $match: {
         likedBy: new mongoose.Types.ObjectId(req.user._id),
@@ -157,12 +165,21 @@ const getLikedVideos = asyncHandler(async (req, res) => {
       },
     },
     {
-      $project: {
-        _id: 1,
-        videoInfo: 1,
+      $replaceRoot: {
+        newRoot: "$videoInfo",
+      },
+    },
+    {
+      $sort: {
+        [sortBy]: sortOrder,
       },
     },
   ]);
+
+  const likedVideos = await Like.aggregatePaginate(aggregate, {
+    page,
+    limit,
+  });
 
   if (!likedVideos) {
     throw new ApiError("Error while getting liked videos");

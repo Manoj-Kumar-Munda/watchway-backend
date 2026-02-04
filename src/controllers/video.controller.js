@@ -10,7 +10,7 @@ import {
 } from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  let { userId, page, limit, sortBy, sortOrder } = req.query;
+  let { page, limit, sortBy, sortOrder } = req.query;
 
   page = (parseInt(page) && (page < 1 ? 1 : page)) || 1;
   limit = (parseInt(limit) && (limit < 1 ? 10 : limit)) || 10;
@@ -117,6 +117,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
 });
 
 const getSearchResults = asyncHandler(async (req, res) => {
+  
   const page =
     (parseInt(req.query.page) && (req.query.page < 1 ? 1 : req.query.page)) ||
     1;
@@ -126,7 +127,8 @@ const getSearchResults = asyncHandler(async (req, res) => {
     10;
   const query = req.query.query || "";
   const sortBy = req.query.sortBy || "createdAt";
-  const sortOrder = (parseInt(req.query.sortOrder) && (req.query.sortOrder >= 1 ? 1 : -1)) || 1;
+  const sortOrder =
+    (parseInt(req.query.sortOrder) && (req.query.sortOrder >= 1 ? 1 : -1)) || 1;
 
   const aggregate = Video.aggregate([
     {
@@ -264,6 +266,28 @@ const getVideoById = asyncHandler(async (req, res) => {
       },
     },
     {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        pipeline: [
+          {
+            $project: {
+              fullName: 1,
+              username: 1,
+              avatar: 1,
+            },
+          },
+        ],
+        as: "owner",
+      },
+    },
+    {
+      $unwind: {
+        path: "$owner",
+      },
+    },
+    {
       $project: {
         videoLikes: 0,
       },
@@ -274,7 +298,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Internal server error");
   }
 
-  return res.status(200).json(new ApiResponse(200, video));
+  return res.status(200).json(new ApiResponse(200, video[0]));
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
