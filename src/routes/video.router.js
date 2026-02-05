@@ -46,7 +46,7 @@ videoRouter.route("/search").get(getSearchResults);
 
 videoRouter
   .route("/:videoId")
-  .get(verifyJWT, getVideoById)
+  .get(getVideoById)
   .delete(verifyJWT, deleteVideo);
 
 export default videoRouter;

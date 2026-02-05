@@ -14,9 +14,9 @@ const router = Router();
 
 router.route("/").post(verifyJWT, createTweet);
 router.route("/user/:userId").get(authStatus, getUserTweets);
+router.route("/:tweetId").get(getTweetById);
 router
   .route("/:tweetId")
-  .get(getTweetById)
   .patch(verifyJWT, updateTweet)
   .delete(verifyJWT, deleteTweet);
 router

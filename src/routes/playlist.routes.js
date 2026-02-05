@@ -12,14 +12,15 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
+router.route("/:playlistId").get(getPlaylistById);
 router.route("/user/:userId").get(getUserPlaylists);
+
 router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
 
 router.route("/").post(createPlaylist);
 
 router
   .route("/:playlistId")
-  .get(getPlaylistById)
   .patch(updatePlaylist)
   .delete(deletePlaylist);
 

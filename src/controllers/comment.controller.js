@@ -16,6 +16,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid videoId");
   }
 
+
   const aggregate = Comment.aggregate([
     {
       $match: {
@@ -47,16 +48,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
       $addFields: {
         totalLikes: {
           $size: "$likes",
-        },
-        isLiked: {
-          $cond: {
-            if: {
-              $in: [req.user._id, "$likes.likedBy"],
-            },
-            then: true,
-            else: false,
-          },
-        },
+        }
       },
     },
     {
@@ -75,7 +67,6 @@ const getVideoComments = asyncHandler(async (req, res) => {
           avatar: 1,
         },
         totalLikes: 1,
-        isLiked: 1,
       },
     },
   ]);
