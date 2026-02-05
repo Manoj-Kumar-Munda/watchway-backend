@@ -446,14 +446,27 @@ const updateWatchHistory = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiResponse(201, updatedUser, "Watch history updated"));
+    .json(new ApiResponse(201, {}, "Watch history updated"));
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-  const user = await User.aggregate([
+  let { page, limit, sortBy, sortOrder } = req.query;
+
+  page = (parseInt(page) && (page < 1 ? 1 : page)) || 1;
+  limit = (parseInt(limit) && (limit < 1 ? 10 : limit)) || 10;
+
+  sortBy = req.query.sortBy || "createdAt";
+  sortOrder = (parseInt(sortOrder) && (sortOrder >= 1 ? 1 : -1)) || 1;
+
+  const aggregate = User.aggregate([
     {
       $match: {
         _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $unwind: {
+        path: "$watchHistory",
       },
     },
     {
@@ -490,16 +503,32 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         ],
       },
     },
+    {
+      $unwind: {
+        path: "$watchHistory",
+      },
+    },
+    {
+      $replaceRoot: {
+        newRoot: "$watchHistory",
+      },
+    },
+    {
+      $sort: {
+        [sortBy]: sortOrder,
+      },
+    },
   ]);
+
+  const watchHistory = await User.aggregatePaginate(aggregate, {
+    page,
+    limit,
+  });
 
   return res
     .status(200)
     .json(
-      new ApiResponse(
-        200,
-        user[0].watchHistory,
-        "Watch History fetched successfully"
-      )
+      new ApiResponse(200, watchHistory, "Watch History fetched successfully")
     );
 });
 
