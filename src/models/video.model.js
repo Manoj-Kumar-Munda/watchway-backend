@@ -5,11 +5,9 @@ const videoSchema = new Schema(
   {
     videoFile: {
       type: String, //cloudinary-url
-      required: true,
     },
     thumbnail: {
       type: String, //cloudinary-url
-      required: true,
     },
     title: {
       type: String,
@@ -21,7 +19,6 @@ const videoSchema = new Schema(
     },
     duration: {
       type: Number,
-      required: true,
     },
     views: {
       type: Number,
@@ -30,6 +27,14 @@ const videoSchema = new Schema(
     isPublished: {
       type: Boolean,
       default: true,
+    },
+    uploadStatus: {
+      type: String,
+      enum: ["uploading", "published", "failed"],
+      default: "uploading",
+    },
+    uploadError: {
+      type: String, // Stores error message if upload fails
     },
     owner: {
       type: Schema.Types.ObjectId,
@@ -44,8 +49,8 @@ const videoSchema = new Schema(
 videoSchema.plugin(mongooseAggregatePaginate);
 
 videoSchema.index({
-  title: 'text',
-  description: 'text'
+  title: "text",
+  description: "text",
 });
 
 export const Video = mongoose.model("Video", videoSchema);

@@ -117,7 +117,6 @@ const getChannelVideos = asyncHandler(async (req, res) => {
 });
 
 const getSearchResults = asyncHandler(async (req, res) => {
-  
   const page =
     (parseInt(req.query.page) && (req.query.page < 1 ? 1 : req.query.page)) ||
     1;
@@ -197,34 +196,64 @@ const publishAVideo = asyncHandler(async (req, res) => {
   if (!thumbnailLocalPath) {
     throw new ApiError(400, "Thumbnail is required");
   }
-  const videoURL = await uploadOnCloudinary(videoFileLocalPath);
-  const thumbnailURL = await uploadOnCloudinary(thumbnailLocalPath);
 
-  if (!videoURL) {
-    throw new ApiError(500, "Failed to upload video");
-  }
-  if (!thumbnailURL) {
-    throw new ApiError(500, "Failed to upload thumbnail");
-  }
-
+  // Create video record immediately with "uploading" status
   const video = await Video.create({
     title,
     description,
-    duration: videoURL.duration,
-    videoFile: videoURL.url,
-    thumbnail: thumbnailURL.url,
     views: 0,
-    isPublished: true,
+    isPublished: false, // Will be set to true after upload completes
+    uploadStatus: "uploading",
     owner: req.user._id,
   });
 
-  if (!video) {
-    throw new ApiError(500, "Failed to upload the video");
-  }
+  // Return response immediately so frontend can show uploading indicator
+  res.status(202).json(
+    new ApiResponse(
+      202,
+      {
+        _id: video._id,
+        title: video.title,
+        uploadStatus: video.uploadStatus,
+      },
+      "Video upload started. Processing in background."
+    )
+  );
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, video, "Video is uploaded successfully"));
+  // Process upload in background (fire and forget)
+  (async () => {
+    try {
+      const [videoURL, thumbnailURL] = await Promise.all([
+        uploadOnCloudinary(videoFileLocalPath),
+        uploadOnCloudinary(thumbnailLocalPath),
+      ]);
+
+      if (!videoURL || !thumbnailURL) {
+        await Video.findByIdAndUpdate(video._id, {
+          uploadStatus: "failed",
+          uploadError: "Failed to upload media files to cloud storage",
+        });
+        return;
+      }
+
+      // Update video with uploaded file URLs and mark as published
+      await Video.findByIdAndUpdate(video._id, {
+        videoFile: videoURL.url,
+        thumbnail: thumbnailURL.url,
+        duration: videoURL.duration,
+        isPublished: true,
+        uploadStatus: "published",
+      });
+
+      console.log(`Video ${video._id} uploaded successfully`);
+    } catch (error) {
+      console.error(`Video upload failed for ${video._id}:`, error);
+      await Video.findByIdAndUpdate(video._id, {
+        uploadStatus: "failed",
+        uploadError: error.message || "Unknown error during upload",
+      });
+    }
+  })();
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
@@ -431,6 +460,33 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, updatedVideo, "Video status updated"));
 });
 
+const getUploadStatus = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    throw new ApiError(400, "VideoId is required");
+  }
+
+  const video = await Video.findById(videoId).select(
+    "_id title uploadStatus uploadError thumbnail videoFile"
+  );
+
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      _id: video._id,
+      title: video.title,
+      uploadStatus: video.uploadStatus,
+      uploadError: video.uploadError,
+      thumbnail: video.thumbnail,
+      videoFile: video.videoFile,
+    })
+  );
+});
+
 export {
   getAllVideos,
   getSearchResults,
@@ -441,4 +497,5 @@ export {
   deleteVideo,
   togglePublishStatus,
   getChannelVideos,
+  getUploadStatus,
 };

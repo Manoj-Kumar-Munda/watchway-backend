@@ -10,30 +10,31 @@ import {
   publishAVideo,
   togglePublishStatus,
   updateVideo,
+  getUploadStatus,
 } from "../controllers/video.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const videoRouter = express.Router();
 
-videoRouter.route("/")
-  .get(
-    getAllVideos
-  )
+videoRouter
+  .route("/")
+  .get(getAllVideos)
   .post(
-  verifyJWT,
-  upload.fields([
-    {
-      name: "video",
-      maxCount: 1,
-    },
-    {
-      name: "thumbnail",
-      maxCount: 1,
-    },
-  ]),
-  publishAVideo
-);
+    verifyJWT,
+    upload.fields([
+      {
+        name: "video",
+        maxCount: 1,
+      },
+      {
+        name: "thumbnail",
+        maxCount: 1,
+      },
+    ]),
+    publishAVideo
+  );
 videoRouter.route("/channel").get(getChannelVideos);
+videoRouter.route("/upload-status/:videoId").get(verifyJWT, getUploadStatus);
 videoRouter.route("/status/:videoId").patch(verifyJWT, togglePublishStatus);
 
 videoRouter.route("/update/:videoId").patch(verifyJWT, updateVideo);
@@ -44,9 +45,6 @@ videoRouter
 
 videoRouter.route("/search").get(getSearchResults);
 
-videoRouter
-  .route("/:videoId")
-  .get(getVideoById)
-  .delete(verifyJWT, deleteVideo);
+videoRouter.route("/:videoId").get(getVideoById).delete(verifyJWT, deleteVideo);
 
 export default videoRouter;
