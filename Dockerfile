@@ -1,16 +1,16 @@
+
+
 FROM node:22-alpine
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files first for better layer caching
-COPY package.json package-lock.json ./
+COPY package*.json .
 
-RUN npm install
+RUN npm ci --omit=dev
 
 # Copy source code
-COPY src/ ./src/
-COPY public/ ./public/
 COPY . .
 
 # Expose the port the app runs on

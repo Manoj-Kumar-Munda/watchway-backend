@@ -1,13 +1,10 @@
-version: "3.8"
-
+name: "watchway-backend"
 services:
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: watchway-backend
+    image: manojdev999/watchway:latest
+    container_name: watchway
     ports:
-      - "${PORT:-8000}:8000"
+      - "8000:8000"
     env_file:
       - .env
     restart: unless-stopped
