@@ -30,6 +30,15 @@ jobs:
         run: |
           docker push $IMAGE_NAME
 
+      - name: Copy docker-compose to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "/root/watchway"
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
